@@ -19,22 +19,23 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
 module tb_combinational_multiplier;
-    reg [7:0] A, B;
-    wire [15:0] product;
+
+    reg [3:0] A, B;
+    wire [7:0] product;
+
     combinational_multiplier uut (
         .A(A),
         .B(B),
         .product(product)
     );
+
     initial begin
-        // Test
-        A = 8'd15;
-        B = 8'd10;
-        #10;
-        $display("A = %d, B = %d, Product = %d", A, B, product);
-        $stop;
+        A = 0; B = 0;
+        #10 A = 4'b1010; B = 4'b0011; // Test: 10 * 3 = 30
+        #10 A = 4'b1111; B = 4'b1111; // Test: 15 * 15 = 225
+        #10 $finish;
     end
 endmodule
+
 

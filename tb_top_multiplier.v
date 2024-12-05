@@ -20,12 +20,23 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
+`timescale 1ns / 1ps
+
 module tb_top_multiplier;
-    reg clk, reset, start, select;
-    reg [7:0] A, B;
+
+    // Testbench signals
+    reg clk;
+    reg reset;
+    reg start;
+    reg select;
+    reg [7:0] A;
+    reg [7:0] B;
     wire [15:0] product;
-    wire [6:0] seg_display;
-    // Instantiate the top module
+    wire done;
+    wire [6:0] seg;
+    wire [3:0] anodes;
+
+    // Instantiate the top_multiplier
     top_multiplier uut (
         .clk(clk),
         .reset(reset),
@@ -34,40 +45,83 @@ module tb_top_multiplier;
         .A(A),
         .B(B),
         .product(product),
-        .seg_display(seg_display)
+        .done(done),
+        .seg(seg),
+        .anodes(anodes)
     );
-    // Clock generation
-    initial begin
-        clk = 0;
-        forever #5 clk = ~clk; // 10ns clock period
+
+    // Clock Generation
+    always begin
+        #5 clk = ~clk;  // Toggle clock every 5 ns
     end
-    // Test sequence
+
+    // Testbench procedure
     initial begin
-        // Initialize signals
-        reset = 1;
+        // Initialize all signals
+        clk = 0;
+        reset = 0;
         start = 0;
-        select = 0; // Start with sequential multiplier
+        select = 0;
         A = 8'd0;
         B = 8'd0;
-        // Reset system
+
+        // Reset the design
+        $display("Starting Reset Sequence...");
+        reset = 1;
         #10 reset = 0;
-        // Test sequential multiplier
-        A = 8'd15;
-        B = 8'd10;
-        #10 start = 1; // Start operation
-        #10 start = 0; // Deassert start
-        #100; // Wait for done signal
-        $display("Sequential Multiplier Done, Product = %d", product);
-        $display("7-Segment Display = %b", seg_display);
-        // Test combinational multiplier
-        select = 1; // Switch to combinational multiplier
-        A = 8'd7;
-        B = 8'd6;
+
+        // Test 1: Sequential multiplier with A = 8, B = 5
+        $display("Test 1: Sequential multiplier with A = 8, B = 5");
+        A = 8'd8;
+        B = 8'd5;
+        start = 1;
+        select = 0;  // Select sequential multiplier
+        #10 start = 0; // Deassert start after 10 ns
+
+        // Wait for multiplication to finish
+        wait(done == 1);
+        $display("Sequential product = %d (Expected: 40)", product);
         #10;
-        $display("Combinational Multiplier, Product = %d", product);
-        $display("7-Segment Display = %b", seg_display);
-        // End test
-        #10 $stop;
+
+        // Test 2: Combinational multiplier with A = 15, B = 3
+        $display("Test 2: Combinational multiplier with A = 15, B = 3");
+        A = 8'd15;
+        B = 8'd3;
+        select = 1;  // Select combinational multiplier
+        #10;
+        $display("Combinational product = %d (Expected: 45)", product);
+        #10;
+
+        // Test 3: Sequential multiplier with A = 12, B = 12
+        $display("Test 3: Sequential multiplier with A = 12, B = 12");
+        A = 8'd12;
+        B = 8'd12;
+        start = 1;
+        select = 0;  // Select sequential multiplier
+        #10 start = 0; // Deassert start after 10 ns
+
+        // Wait for multiplication to finish
+        wait(done == 1);
+        $display("Sequential product = %d (Expected: 144)", product);
+        #10;
+
+        // Test 4: Combinational multiplier with A = 255, B = 2
+        $display("Test 4: Combinational multiplier with A = 255, B = 2");
+        A = 8'd255;
+        B = 8'd2;
+        select = 1;  // Select combinational multiplier
+        #10;
+        $display("Combinational product = %d (Expected: 510)", product);
+        #10;
+
+        // End simulation
+        $finish;
     end
+
+    // Monitor the 7-segment display signals
+    initial begin
+        $monitor("Time: %t | Product: %d | Segments: %b | Anodes: %b", $time, product, seg, anodes);
+    end
+
 endmodule
 

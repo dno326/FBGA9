@@ -19,45 +19,75 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
 module sequential_multiplier(
     input clk,
     input reset,
     input start,
-    input [7:0] A, // 8-bit multiplier
-    input [7:0] B, // 8-bit multiplicand
-    output reg [15:0] product, // 16-bit product
+    input [3:0] A,
+    input [3:0] B, 
+    output reg [7:0] product,
     output reg done
 );
-    reg [15:0] product_reg;
-    reg [7:0] multiplier;
-    reg [3:0] count;
+
+    // Define states
+    parameter S0_idle = 0, S1_multiply = 1, S2_update_result = 2, S3_done = 3;
+    reg [7:0] partial_product;
+    reg [7:0] multiplicand;
+    reg [3:0] shift_count;
+    reg [3:0] operand_bb;
+    reg [1:0] CS, NS;
+    
+    always @(posedge clk or posedge reset) begin
+        if (reset)
+            CS <= S0_idle; // Reset the current state
+        else
+            CS <= NS; // Transition to next state
+    end
 
     always @(posedge clk or posedge reset) begin
         if (reset) begin
-            product_reg <= 16'b0;
-            multiplier <= 8'b0;
-            count <= 4'b0;
-            done <= 1'b0;
-        end else if (start) begin
-            if (count == 4'b0) begin
-                product_reg <= {8'b0, B};
-                multiplier <= A;
-                done <= 1'b0;
-                count <= 4'd8;
-            end else if (count > 0) begin
-                if (multiplier[0]) 
-                    product_reg <= product_reg + (A << (8 - count));
-                multiplier <= multiplier >> 1;
-                count <= count - 1;
-            end else begin
-                done <= 1'b1;
-            end
+            partial_product <= 8'b0;
+            shift_count <= 4'b0;
+            multiplicand <= 8'b0;
+            operand_bb <= 4'b0;
+            product <= 8'b0;
+            done <= 0;
+        end else begin
+            case (CS)
+                S0_idle: begin
+                    if (start) begin
+                        partial_product <= 8'b0;
+                        multiplicand <= {4'b0, A};
+                        operand_bb <= B;
+                        shift_count <= 4'b0;
+                        done <= 0;
+                        NS = S1_multiply;
+                    end else begin
+                        NS = S0_idle;
+                    end
+                end
+                S1_multiply: begin
+                    if (shift_count < 4) begin
+                        if (operand_bb[0]) 
+                            partial_product <= partial_product + multiplicand;
+                        multiplicand <= multiplicand << 1;
+                        operand_bb <= operand_bb >> 1;
+                        shift_count <= shift_count + 1;
+                        NS = S1_multiply;
+                    end else begin
+                        NS = S2_update_result;
+                    end
+                end
+                S2_update_result: begin
+                    product <= partial_product;
+                    done <= 1;
+                    NS = S3_done;
+                end
+                S3_done: begin
+                    NS = S0_idle;
+                end
+            endcase
         end
-    end
-
-    always @(*) begin
-        product = product_reg;
     end
 endmodule
 

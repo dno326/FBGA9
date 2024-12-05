@@ -21,9 +21,26 @@
 
 
 module combinational_multiplier(
-    input [7:0] A, // 8-bit multiplier
-    input [7:0] B, // 8-bit multiplicand
-    output [15:0] product // 16-bit product
+    input [3:0] A, 
+    input [3:0] B,
+    output [7:0] product 
 );
-    assign product = A * B;
+
+wire [3:0] m0;
+wire [4:0] m1;
+wire [5:0] m2;
+wire [6:0] m3;
+
+wire [7:0] s1,s2,s3;
+
+assign m0 = {4{B[0]}} & A;
+assign m1 = ({4{B[1]}} & A)<<1;
+assign m2 = ({4{B[2]}} & A)<<2;
+assign m3 = ({4{B[3]}} & A)<<3;
+
+assign s1 ={4'b000, m0} + {3'b000, m1};
+assign s2 = s1 + {2'b00, m2};
+assign s3 = s2 + {1'b0, m3};
+assign product = s3;
+
 endmodule

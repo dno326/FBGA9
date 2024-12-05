@@ -19,35 +19,32 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
 module tb_sequential_multiplier;
-    reg clk, reset, start;
-    reg [7:0] A, B;
-    wire [15:0] product;
+
+    reg clk, rst, start;
+    reg [3:0] A, B;
+    wire [7:0] product;
     wire done;
+
     sequential_multiplier uut (
         .clk(clk),
-        .reset(reset),
+        .rst(rst),
         .start(start),
         .A(A),
         .B(B),
         .product(product),
         .done(done)
     );
+
+    // Generate clock
+    always #5 clk = ~clk;
+
     initial begin
-        //clock Generation
-        clk = 0;
-        forever #5 clk = ~clk;
-    end
-    initial begin
-        //test
-        reset = 1;
-        start = 0;
-        A = 8'd15;
-        B = 8'd10;
-        #10 reset = 0;
-        #10 start = 1;
+        clk = 0; rst = 1; start = 0; A = 0; B = 0;
+        #10 rst = 0;
+        #10 A = 4'b1010; B = 4'b0011; start = 1; // Test: 10 * 3 = 30
         #10 start = 0;
-        #100 $stop; // Adjust simulation time based on multiplier size
+        #100 $finish;
     end
 endmodule
+
